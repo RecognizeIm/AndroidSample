@@ -1,24 +1,22 @@
 package pl.itraff.androidsample;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -48,9 +46,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String PREF_KEY = "USER_KEY";
     public static final String PREF_MODE = "USER_MODE";
     public static final String PREF_SIZE = "USER_SIZE";
+    public static final String EXTRA_IMAGE_URI = "resultImageUri";
+    protected static final String FILE_PROVIDER_NAME = "pl.itraff.fileprovider";
 
+    File capturedPhotoImage;
     String capturedPhotoPath;
-    String recognizedPhotoPath;
     Spinner spinnerModes;
     Spinner spinnerSizes;
     Spinner spinnerFilter;
@@ -115,15 +115,16 @@ public class MainActivity extends AppCompatActivity {
                 // Do nothing
             }
         });
+
         btnViewResult = (Button) findViewById(R.id.btn_view_result);
         btnViewResult.setVisibility(View.GONE);
         btnViewResult.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Display picture using built-in photo browsing app
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.parse("file://" + recognizedPhotoPath), "image/*");
-                startActivity(intent);
+                Uri resultImageUri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER_NAME, getCapturedPhotoImage());
+                Intent resultIntent = new Intent(MainActivity.this, ResultActivity.class);
+                resultIntent.putExtra(EXTRA_IMAGE_URI, resultImageUri);
+                startActivity(resultIntent);
             }
         });
 
@@ -226,11 +227,11 @@ public class MainActivity extends AppCompatActivity {
      * @throws IOException
      */
     protected void saveBitmapToExternalStorage(Bitmap bitmap) throws IOException {
-        File image = getFileToSave();
-        recognizedPhotoPath = image.getAbsolutePath();
+        File image = getCapturedPhotoImage();
         FileOutputStream out = new FileOutputStream(image);
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
         out.flush();
+        out.getFD().sync();
         out.close();
         bitmap.recycle();
     }
@@ -267,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this, "pl.itraff.fileprovider", photoFile);
+                Uri photoURI = FileProvider.getUriForFile(this, FILE_PROVIDER_NAME, photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
             }
@@ -282,8 +283,13 @@ public class MainActivity extends AppCompatActivity {
     protected File createImageFile() throws IOException {
         File image = getFileToSave();
         // Save a file: path for use with ACTION_VIEW intents
+        capturedPhotoImage = image;
         capturedPhotoPath = image.getAbsolutePath();
         return image;
+    }
+
+    protected File getCapturedPhotoImage() {
+        return capturedPhotoImage;
     }
 
     @Override
@@ -383,8 +389,8 @@ public class MainActivity extends AppCompatActivity {
 
     protected File getFileToSave() throws IOException {
         String[] modeNames = getResources().getStringArray(R.array.array_modes);
-        String fileName = "RecognizeIm_" + new SimpleDateFormat("yyyy-MM-dd_HHmmss").format(new Date()) + "_" + modeNames[(int) spinnerModes.getSelectedItemId()];
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        return File.createTempFile(fileName, ".jpg", storageDir);
+        String fileName = "RecognizeIm_" + new SimpleDateFormat("yyyy-MM-dd_HHmmss").format(new Date()) + "_" + modeNames[(int) spinnerModes.getSelectedItemId()] + ".jpg";
+        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), fileName);
     }
+
 }
