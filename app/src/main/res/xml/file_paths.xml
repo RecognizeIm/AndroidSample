@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="Android/data/pl.itraff.androidsample/files/Pictures/" />
+    <external-path name="ext_pic" path="DCIM/pl.itraff.androidsample/" />
 </paths>
