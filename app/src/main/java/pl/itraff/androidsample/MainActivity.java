@@ -1,13 +1,19 @@
 package pl.itraff.androidsample;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,7 +22,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -34,6 +39,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import pl.itraff.androidsample.Event.FailureEvent;
 import pl.itraff.androidsample.Event.RecognizeEvent;
@@ -41,16 +47,15 @@ import pl.itraff.androidsample.Event.SuccessEvent;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final int REQUEST_TAKE_PHOTO = 1;
+    public static final int REQUEST_TAKE_PHOTO = 1337;
+    public static final int MY_PERMISSIONS_REQUEST = 666;
     public static final String PREF_ID = "USER_ID";
     public static final String PREF_KEY = "USER_KEY";
     public static final String PREF_MODE = "USER_MODE";
     public static final String PREF_SIZE = "USER_SIZE";
-    public static final String EXTRA_IMAGE_URI = "resultImageUri";
     protected static final String FILE_PROVIDER_NAME = "pl.itraff.fileprovider";
 
-    File capturedPhotoImage;
-    String capturedPhotoPath;
+    File imageFile = null;
     Spinner spinnerModes;
     Spinner spinnerSizes;
     Spinner spinnerFilter;
@@ -76,18 +81,69 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
+    protected void permissionCheck() {
+        if (
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.INTERNET
+            }, MY_PERMISSIONS_REQUEST);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST: {
+                if (grantResults.length > 0 &&
+                        grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[1] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[2] == PackageManager.PERMISSION_GRANTED &&
+                        grantResults[3] == PackageManager.PERMISSION_GRANTED) {
+                    return;
+                } else {
+                    permissionCheck();
+                }
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setIcon(R.drawable.ic_action_main);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        permissionCheck();
         btnTakePic = (Button)findViewById(R.id.btn_take_pic);
         btnTakePic.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 saveSettings();
-                dispatchTakePictureIntent();
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                // Ensure that there's a camera activity to handle the intent
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    String[] modeNames = getResources().getStringArray(R.array.array_modes);
+                    String fileName = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()) + modeNames[(int) spinnerModes.getSelectedItemId()] + ".jpeg";
+                    File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "pl.itraff.androidsample/");
+                    dir.mkdirs();
+                    imageFile = new File(dir, fileName);
+                    Uri photoUri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER_NAME, imageFile);
+                    grantUriPermission("pl.itraff.androidsample", photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                    takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        grantUriPermission(packageName, photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
+                    startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                }
             }
         });
 
@@ -121,10 +177,12 @@ public class MainActivity extends AppCompatActivity {
         btnViewResult.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Uri resultImageUri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER_NAME, getCapturedPhotoImage());
-                Intent resultIntent = new Intent(MainActivity.this, ResultActivity.class);
-                resultIntent.putExtra(EXTRA_IMAGE_URI, resultImageUri);
-                startActivity(resultIntent);
+                Uri resultImageUri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER_NAME, imageFile);
+                grantUriPermission("pl.itraff.androidsample", resultImageUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.setDataAndType(resultImageUri, "image/jpeg");
+                startActivity(intent);
             }
         });
 
@@ -200,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar.setVisibility(View.GONE);
 
         // Draw bounding boxes on picture
-        Bitmap resultBitmap = iTraffApi.drawBoundingBoxes(event.getObjects(), capturedPhotoPath, sampleSize);
+        Bitmap resultBitmap = iTraffApi.drawBoundingBoxes(event.getObjects(), imageFile.getAbsolutePath(), sampleSize);
 
         // Save new picture to the External Storage
         try {
@@ -227,8 +285,7 @@ public class MainActivity extends AppCompatActivity {
      * @throws IOException
      */
     protected void saveBitmapToExternalStorage(Bitmap bitmap) throws IOException {
-        File image = getCapturedPhotoImage();
-        FileOutputStream out = new FileOutputStream(image);
+        FileOutputStream out = new FileOutputStream(imageFile);
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
         out.flush();
         out.getFD().sync();
@@ -251,47 +308,6 @@ public class MainActivity extends AppCompatActivity {
         return spinner;
     }
 
-    /**
-     * Opens camera intent and captures the photo to private app's Pictures directory
-     */
-    protected void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                // Error occurred while creating the File
-                ex.printStackTrace();
-            }
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this, FILE_PROVIDER_NAME, photoFile);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-            }
-        }
-    }
-
-    /**
-     * Creates temporary file in application's private file storage
-     * @return temporary file path
-     * @throws IOException
-     */
-    protected File createImageFile() throws IOException {
-        File image = getFileToSave();
-        // Save a file: path for use with ACTION_VIEW intents
-        capturedPhotoImage = image;
-        capturedPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
-    protected File getCapturedPhotoImage() {
-        return capturedPhotoImage;
-    }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
@@ -299,11 +315,10 @@ public class MainActivity extends AppCompatActivity {
             Bitmap bitmap;
             int modeId = (int) spinnerModes.getSelectedItemId();
             int sizeId = (int) spinnerSizes.getSelectedItemId();
-
             if (modeId == 2) {
-                bitmap = BitmapFactory.decodeFile(capturedPhotoPath);
+                bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
             } else {
-                bitmap = getDownscaledBitmap(capturedPhotoPath, ItraffApi.SIZES[modeId][sizeId]);
+                bitmap = getDownscaledBitmap(imageFile.getAbsolutePath(), ItraffApi.SIZES[modeId][sizeId]);
             }
 
             // Do the API request
@@ -385,12 +400,6 @@ public class MainActivity extends AppCompatActivity {
         editor.putInt(PREF_MODE, spinnerModes.getSelectedItemPosition());
         editor.putInt(PREF_SIZE, spinnerSizes.getSelectedItemPosition());
         editor.commit();
-    }
-
-    protected File getFileToSave() throws IOException {
-        String[] modeNames = getResources().getStringArray(R.array.array_modes);
-        String fileName = "RecognizeIm_" + new SimpleDateFormat("yyyy-MM-dd_HHmmss").format(new Date()) + "_" + modeNames[(int) spinnerModes.getSelectedItemId()] + ".jpg";
-        return new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), fileName);
     }
 
 }
