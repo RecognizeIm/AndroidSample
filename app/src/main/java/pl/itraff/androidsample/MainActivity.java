@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import pl.itraff.androidsample.Event.FailureEvent;
 import pl.itraff.androidsample.Event.RecognizeEvent;
@@ -132,9 +134,14 @@ public class MainActivity extends AppCompatActivity {
                     dir.mkdirs();
                     imageFile = new File(dir, fileName);
                     Uri photoUri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER_NAME, imageFile);
-                    grantUriPermission("pl.itraff.androidsample", photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    grantUriPermission("pl.itraff.androidsample", photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
                     takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                    for (ResolveInfo resolveInfo : resInfoList) {
+                        String packageName = resolveInfo.activityInfo.packageName;
+                        grantUriPermission(packageName, photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    }
                     startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
                 }
             }
