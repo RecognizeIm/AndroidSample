@@ -1,4 +1,4 @@
-package pl.itraff.androidsample;
+package im.recognize.androidsample;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -6,8 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
-import android.widget.ImageView;
-import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -28,9 +26,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 
-import pl.itraff.androidsample.Event.FailureEvent;
-import pl.itraff.androidsample.Event.RecognizeEvent;
-import pl.itraff.androidsample.Event.SuccessEvent;
+import im.recognize.androidsample.Event.FailureEvent;
+import im.recognize.androidsample.Event.RecognizeEvent;
+import im.recognize.androidsample.Event.SuccessEvent;
 
 /**
  * Created by Tomasz Szymański on 2016-07-11.
@@ -207,7 +205,7 @@ public class ItraffApi {
         // Format the aggregated output
         String out = "Recognized objects: " + String.valueOf(l) + "\n";
         for (String id : matches.keySet()) {
-            out = out.concat(id).concat(": ").concat(String.valueOf(matches.get(id))).concat("\n");
+            out = out.concat(id).concat(" ").concat(String.valueOf(matches.get(id))).concat("\n");
         }
         return out;
     }

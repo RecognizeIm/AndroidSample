@@ -1,4 +1,4 @@
-package pl.itraff.androidsample;
+package im.recognize.androidsample;
 
 import org.junit.Test;
 
