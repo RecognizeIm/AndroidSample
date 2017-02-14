@@ -1,4 +1,4 @@
-package pl.itraff.androidsample.Event;
+package im.recognize.androidsample.Event;
 
 import java.net.URL;
 

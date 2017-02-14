@@ -1,4 +1,4 @@
-package pl.itraff.androidsample.Event;
+package im.recognize.androidsample.Event;
 
 public class FailureEvent {
 
