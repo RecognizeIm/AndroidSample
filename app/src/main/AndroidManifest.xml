@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="im.recognize.androidsample">
+    package="im.recognize.android">
     <uses-feature
         android:name="android.hardware.camera"
         android:required="true" />
@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="im.recognize.androidsample.MainActivity"
+            android:name="im.recognize.android.MainActivity"
             android:screenOrientation="portrait"
             android:configChanges="keyboardHidden|orientation|screenSize">
             <intent-filter>

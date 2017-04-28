@@ -1,4 +1,4 @@
-package im.recognize.androidsample;
+package im.recognize.android;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -26,9 +26,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 
-import im.recognize.androidsample.Event.FailureEvent;
-import im.recognize.androidsample.Event.RecognizeEvent;
-import im.recognize.androidsample.Event.SuccessEvent;
+import im.recognize.android.Event.FailureEvent;
+import im.recognize.android.Event.RecognizeEvent;
+import im.recognize.android.Event.SuccessEvent;
 
 /**
  * Created by Tomasz Szymański on 2016-07-11.

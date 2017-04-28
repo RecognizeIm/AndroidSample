@@ -1,4 +1,4 @@
-package im.recognize.androidsample;
+package im.recognize.android;
 
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +14,6 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -39,9 +38,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import im.recognize.androidsample.Event.FailureEvent;
-import im.recognize.androidsample.Event.RecognizeEvent;
-import im.recognize.androidsample.Event.SuccessEvent;
+import im.recognize.android.Event.FailureEvent;
+import im.recognize.android.Event.RecognizeEvent;
+import im.recognize.android.Event.SuccessEvent;
 
 public class MainActivity extends AppCompatActivity {
 
