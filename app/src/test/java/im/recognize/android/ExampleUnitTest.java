@@ -1,4 +1,4 @@
-package im.recognize.androidsample;
+package im.recognize.android;
 
 import org.junit.Test;
 
