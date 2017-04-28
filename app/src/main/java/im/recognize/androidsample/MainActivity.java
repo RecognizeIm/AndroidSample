@@ -3,6 +3,8 @@ package im.recognize.androidsample;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -12,6 +14,7 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -34,6 +37,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import im.recognize.androidsample.Event.FailureEvent;
 import im.recognize.androidsample.Event.RecognizeEvent;
@@ -46,9 +50,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String PREF_KEY = "USER_KEY";
     public static final String PREF_MODE = "USER_MODE";
     public static final String PREF_SIZE = "USER_SIZE";
+    public static final String FILE_PROVIDER = "im.recognize.fileprovider";
 
     String capturedPhotoPath;
     String recognizedPhotoPath;
+    File resultFile;
     Spinner spinnerModes;
     Spinner spinnerSizes;
     Spinner spinnerFilter;
@@ -123,7 +129,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // Display picture using built-in photo browsing app
                 Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setDataAndType(Uri.parse("file://" + recognizedPhotoPath), "image/*");
+                Uri uri = FileProvider.getUriForFile(MainActivity.this, FILE_PROVIDER, resultFile);
+                intent.setDataAndType(uri, "image/*");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    grantUriPermission(packageName, uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
                 startActivity(intent);
             }
         });
@@ -230,6 +243,7 @@ public class MainActivity extends AppCompatActivity {
         File image = getFileToSave();
         recognizedPhotoPath = image.getAbsolutePath();
         FileOutputStream out = new FileOutputStream(image);
+        resultFile = image;
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
         out.flush();
         out.close();
@@ -268,8 +282,14 @@ public class MainActivity extends AppCompatActivity {
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this, "im.recognize.fileprovider", photoFile);
+                Uri photoURI = FileProvider.getUriForFile(this, FILE_PROVIDER, photoFile);
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                takePictureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    grantUriPermission(packageName, photoURI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
             }
         }
