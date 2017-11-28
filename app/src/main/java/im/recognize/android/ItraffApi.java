@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.Base64;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
@@ -35,7 +36,7 @@ import im.recognize.android.Event.SuccessEvent;
  */
 public class ItraffApi {
 
-    public static final String API_URL = "http://recognize.im/v2/recognize/";
+    public static final String API_URL = "http://api.recognize.im/v2/recognize/";
     public static final String[] MODES = {"single/", "multi/", "shelf/"};
     public static final String[] FILTER = {"all/", ""};
     public static final int[][] SIZES = {{240, 360, 480}, {640, 1280, 1920}, {}};
@@ -125,8 +126,10 @@ public class ItraffApi {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        byte[] base64encodedImage = Base64.encode(event.getImage(), Base64.DEFAULT);
+        String hash = ItraffApi.getMD5FromKeyAndImage(event.getClientKey(), base64encodedImage);
         connection.setRequestProperty("Content-Type", "image/jpeg");
-        String hash = ItraffApi.getMD5FromKeyAndImage(event.getClientKey(), event.getImage());
+        connection.setRequestProperty("Content-Transfer-Encoding", "base64");
         connection.setRequestProperty(HEADER_ITRAFF, hash);
         connection.setRequestProperty(HEADER_ACCEPT, HEADER_APPLICATION_JSON);
         OutputStream out = null;
@@ -140,7 +143,7 @@ public class ItraffApi {
 
             // Do the request
             out = new BufferedOutputStream(connection.getOutputStream());
-            out.write(event.getImage());
+            out.write(base64encodedImage);
 
             // Read the response
             in = new BufferedInputStream(connection.getInputStream());
