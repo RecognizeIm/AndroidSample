@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -102,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Assign form inputs, buttons and actions
         textViewId = (TextView) findViewById(R.id.edit_id);
+        textViewId.setRawInputType(Configuration.KEYBOARD_QWERTY);
         textViewKey = (TextView) findViewById(R.id.edit_key);
         textViewResult = (TextView) findViewById(R.id.txt_result);
         textViewResult.setVisibility(View.GONE);
